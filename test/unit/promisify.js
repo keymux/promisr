@@ -28,7 +28,7 @@ describe("promise_util.js", () => {
     const createPassMockFn = () => createMockFn(undefined, passingUuid);
     const createFailMockFn = () => createMockFn(errorUuid, undefined);
 
-    const nativePromiseCallSet = [0,1,2,10,10];
+    const promiseLibs = [undefined, bluebird, nativePromiseOnly, RSVP];
 
     const testFn = (numberOfArguments, promiseLibrary) => (mockFn, expected) => {
       const args = new Array(numberOfArguments).map(() => uuid());
@@ -66,39 +66,28 @@ describe("promise_util.js", () => {
         });
     };
 
-    const testBattery = (callSet) => {
-      it("should promise to execute a standard callback function with a 0 argument signature like (callback)", () => {
-        return callSet.pop()(createPassMockFn(), passingUuid);
-      });
+    promiseLibs.forEach((promiseLib, index) => {
+      describe(`when using ${index < 1 ? 'native Promises,' : 'Promise library ' + index + ','}`, () => {
+        it("should promise to execute a standard callback function with a 0 argument signature like (callback)", () => {
+          return testFn(0, promiseLib)(createPassMockFn(), passingUuid);
+        });
 
-      it("should promise to execute a standard callback function with a 1 argument signature like (a, callback)", () => {
-        return callSet.pop()(createPassMockFn(), passingUuid);
-      });
+        it("should promise to execute a standard callback function with a 1 argument signature like (a, callback)", () => {
+          return testFn(1, promiseLib)(createPassMockFn(), passingUuid);
+        });
 
-      it("should promise to execute a standard callback function with a 2 argument signature like (a, b, callback)", () => {
-        return callSet.pop()(createPassMockFn(), passingUuid);
-      });
+        it("should promise to execute a standard callback function with a 2 argument signature like (a, b, callback)", () => {
+          return testFn(2, promiseLib)(createPassMockFn(), passingUuid);
+        });
 
-      it("should promise to execute a standard callback function with a 10 argument signature like (a, b, c, d, e, f, g, h, i, j, callback)", () => {
-        return callSet.pop()(createPassMockFn(), passingUuid);
-      });
+        it("should promise to execute a standard callback function with a 10 argument signature like (a, b, c, d, e, f, g, h, i, j, callback)", () => {
+          return testFn(10, promiseLib)(createPassMockFn(), passingUuid);
+        });
 
-      it("should reject if called back with an error", () => {
-        return callSet.pop()(createFailMockFn(), errorUuid);
+        it("should reject if called back with an error", () => {
+          return testFn(10, promiseLib)(createFailMockFn(), errorUuid);
+        });
       });
-    };
-
-    describe("when using the native Promise library,", () => {
-      testBattery(nativePromiseCallSet.map(el => testFn(el)));
-    });
-    describe('when using bluebird (a custom Promise/A+ library)', () => {
-      testBattery(nativePromiseCallSet.map(el => testFn(el, bluebird)));
-    });
-    describe('when using nativePromiseOnly (a custom Promise/A+ library)', () => {
-      testBattery(nativePromiseCallSet.map(el => testFn(el, nativePromiseOnly)));
-    });
-    describe('when using RSVP (a custom Promise/A+ library)', () => {
-      testBattery(nativePromiseCallSet.map(el => testFn(el, RSVP)));
     });
   });
 });
