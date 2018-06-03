@@ -65,7 +65,7 @@ describe("promise_util.js", () => {
 
     promiseLibs.forEach((promiseLib, index) => {
       describe(`when using ${
-        index < 1 ? "native Promises," : "Promise library " + index
+        index < 1 ? "native Promises " : "Promise library " + index
       }`, () => {
         it("should promise to execute a standard callback function with a 0 argument signature like (callback)", () => {
           return testFn(0, spy(promiseLib))(createPassMockFn(), passingUuid);
