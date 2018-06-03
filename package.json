@@ -1,0 +1,15 @@
+{
+  "name": "@keymux/promisr",
+  "version": "0.1.0",
+  "description": "A promise library containing utilities for expanding Promise functionality",
+  "main": "src/main.js",
+  "license": "MIT",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "mochawesome": "^3.0.2",
+    "nyc": "^12.0.1",
+    "sinon": "^5.0.10",
+    "uuid": "^3.2.1"
+  }
+}
