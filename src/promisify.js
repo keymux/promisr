@@ -1,5 +1,5 @@
-const promisify = fn => (...promisifyArgs) =>
-  new Promise((resolve, reject) => {
+const promisify = (fn, promiseLibrary = Promise) => (...promisifyArgs) => {
+  return new promiseLibrary((resolve, reject) => {
     promisifyArgs.push((error, result) => {
       if (error) reject(error);
       resolve(result);
@@ -7,6 +7,7 @@ const promisify = fn => (...promisifyArgs) =>
 
     fn(...promisifyArgs);
   });
+};
 
 module.exports = {
   promisify,
