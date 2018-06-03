@@ -33,11 +33,11 @@ describe("promise_util.js", () => {
     const testFn = (numberOfArguments, promiseLibrary) => (mockFn, expected) => {
       const args = new Array(numberOfArguments).map(() => uuid());
 
-      const isCustomPromise = !!promiseLibrary;
+      const isCustomPromise = promiseLibrary !== undefined && promiseLibrary !== null;
       let promiseLibrarySpy;
 
       let promisifyTest;
-      if (promiseLibrary !== undefined && promiseLibrary !== null) {
+      if (isCustomPromise) {
         promiseLibrarySpy = spy(promiseLibrary);
         promisifyTest = promisify(mockFn, promiseLibrarySpy);
       } else {
