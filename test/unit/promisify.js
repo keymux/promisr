@@ -28,66 +28,83 @@ describe("promise_util.js", () => {
     const createPassMockFn = () => createMockFn(undefined, passingUuid);
     const createFailMockFn = () => createMockFn(errorUuid, undefined);
 
-    const promiseLibs = [undefined, bluebird, nativePromiseOnly, RSVP];
+    const promiseLibs = [Promise, bluebird, nativePromiseOnly, RSVP];
 
-    const testFn = (numberOfArguments, promiseLibrary) => (mockFn, expected) => {
-      const args = new Array(numberOfArguments).map(() => uuid());
+    const resolutionValidation = (expected, args) => actual => {
+      expect(actual).to.deep.equal(expected);
 
-      const isCustomPromise = promiseLibrary !== undefined && promiseLibrary !== null;
-      let promiseLibrarySpy;
+      expect(fnSpy.calledOnce).to.be.true;
 
-      let promisifyTest;
-      if (isCustomPromise) {
-        promiseLibrarySpy = spy(promiseLibrary);
-        promisifyTest = promisify(mockFn, promiseLibrarySpy);
-      } else {
-        promisifyTest = promisify(mockFn);
-      }
+      const actuallyExpected = fnSpy.args[0].slice(0, fnSpy.args[0].length - 1);
 
-      return promisifyTest(...args)
-        .then(actual => {
-          expect(actual).to.deep.equal(expected);
-
-          expect(fnSpy.calledOnce).to.be.true;
-
-          const actuallyExpected = fnSpy.args[0].slice(
-            0,
-            fnSpy.args[0].length - 1
-          );
-
-          if (isCustomPromise) {
-            expect(promiseLibrarySpy.called).to.be.true;
-          } else {
-            expect([actuallyExpected]).to.deep.equal([args]);
-          }
-        })
-        .catch(actual => {
-          expect(actual).to.deep.equal(expected);
-        });
+      expect([actuallyExpected]).to.deep.equal([args]);
     };
 
+    const rejectionValidation = (expected, args) => actual =>
+      expect(actual).to.deep.equal(expected);
+
+    const testFnCreator = secondaryTest => (
+      numberOfArguments,
+      promiseLibrary
+    ) => (mockFn, expected) => {
+      const args = new Array(numberOfArguments).map(() => uuid());
+
+      const promisifyTest = promisify(mockFn, promiseLibrary);
+
+      return promisifyTest(...args)
+        .then(resolutionValidation(expected, args))
+        .then(secondaryTest(promiseLibrary))
+        .catch(rejectionValidation(expected, args));
+    };
+
+    const testFn = testFnCreator(
+      promiseLibrarySpy => expect(promiseLibrarySpy.called).to.be.true
+    );
+
+    const testFnBasic = testFnCreator(() => {});
+
     promiseLibs.forEach((promiseLib, index) => {
-      describe(`when using ${index < 1 ? 'native Promises,' : 'Promise library ' + index + ','}`, () => {
+      describe(`when using ${
+        index < 1 ? "native Promises," : "Promise library " + index + ","
+      }`, () => {
         it("should promise to execute a standard callback function with a 0 argument signature like (callback)", () => {
-          return testFn(0, promiseLib)(createPassMockFn(), passingUuid);
+          return testFn(0, spy(promiseLib))(createPassMockFn(), passingUuid);
         });
 
         it("should promise to execute a standard callback function with a 1 argument signature like (a, callback)", () => {
-          return testFn(1, promiseLib)(createPassMockFn(), passingUuid);
+          return testFn(1, spy(promiseLib))(createPassMockFn(), passingUuid);
         });
 
         it("should promise to execute a standard callback function with a 2 argument signature like (a, b, callback)", () => {
-          return testFn(2, promiseLib)(createPassMockFn(), passingUuid);
+          return testFn(2, spy(promiseLib))(createPassMockFn(), passingUuid);
         });
 
         it("should promise to execute a standard callback function with a 10 argument signature like (a, b, c, d, e, f, g, h, i, j, callback)", () => {
-          return testFn(10, promiseLib)(createPassMockFn(), passingUuid);
+          return testFn(10, spy(promiseLib))(createPassMockFn(), passingUuid);
         });
 
         it("should reject if called back with an error", () => {
-          return testFn(10, promiseLib)(createFailMockFn(), errorUuid);
+          return testFn(10, spy(promiseLib))(createFailMockFn(), errorUuid);
         });
       });
     });
+
+    const shouldNoPromiseLib = count =>
+      `should promise to execute a standard callback function with a ${count} argument signature like (callback) without a provided promise library`;
+
+    [0, 1, 2, 10].forEach(count =>
+      it(shouldNoPromiseLib(count), () => {
+        return testFnBasic(count)(createPassMockFn(), passingUuid);
+      })
+    );
+
+    const shouldRejectNoPromiseLib = count =>
+      `should promise to execute a standard callback function with a signature containing ${count} parameters without a provided promise library and reject if there there is an error in the result`;
+
+    [0, 1, 2, 10].forEach(count =>
+      it(shouldRejectNoPromiseLib(count), () =>
+        testFnBasic(count)(createFailMockFn(), errorUuid)
+      )
+    );
   });
 });
