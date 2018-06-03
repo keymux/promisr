@@ -3,6 +3,7 @@ const { spy } = require("sinon");
 const uuid = require("uuid");
 const bluebird = require("bluebird");
 const nativePromiseOnly = require("native-promise-only");
+const RSVP = require("rsvp").Promise;
 
 const { promisify } = require("../../src/promisify");
 
@@ -95,6 +96,9 @@ describe("promise_util.js", () => {
     });
     describe('when using nativePromiseOnly (a custom Promise/A+ library)', () => {
       testBattery(nativePromiseCallSet.map(el => testFn(el, nativePromiseOnly)));
+    });
+    describe('when using RSVP (a custom Promise/A+ library)', () => {
+      testBattery(nativePromiseCallSet.map(el => testFn(el, RSVP)));
     });
   });
 });
