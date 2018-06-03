@@ -5,11 +5,17 @@
   "main": "src/main.js",
   "license": "MIT",
   "devDependencies": {
+    "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "mocha": "^5.2.0",
     "mochawesome": "^3.0.2",
+    "native-promise-only": "^0.8.1",
     "nyc": "^12.0.1",
     "sinon": "^5.0.10",
     "uuid": "^3.2.1"
-  }
+  },
+  "scripts": {
+    "test:unit": "yarn nyc mocha --report=mochawesome ./test/unit/**/*.js"
+  },
+  "dependencies": {}
 }

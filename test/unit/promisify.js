@@ -1,12 +1,13 @@
 const { expect } = require("chai");
-
 const { spy } = require("sinon");
 const uuid = require("uuid");
+const bluebird = require("bluebird");
+const nativePromiseOnly = require("native-promise-only");
 
 const { promisify } = require("../../src/promisify");
 
 describe("promise_util.js", () => {
-  describe("promisify", () => {
+  describe("promisify,", () => {
     let passingUuid;
     let errorUuid;
     let fnSpy;
@@ -23,10 +24,26 @@ describe("promise_util.js", () => {
       mockFnArgs[mockFnArgs.length - 1](error, result);
     };
 
-    const testFn = numberOfArguments => (mockFn, expected) => {
-      const args = Array.from(Array(numberOfArguments)).map(() => uuid());
+    const createPassMockFn = () => createMockFn(undefined, passingUuid);
+    const createFailMockFn = () => createMockFn(errorUuid, undefined);
 
-      return promisify(mockFn)(...args)
+    const nativePromiseCallSet = [0,1,2,10,10];
+
+    const testFn = (numberOfArguments, promiseLibrary) => (mockFn, expected) => {
+      const args = new Array(numberOfArguments).map(() => uuid());
+
+      const isCustomPromise = !!promiseLibrary;
+      let promiseLibrarySpy;
+
+      let promisifyTest;
+      if (promiseLibrary !== undefined && promiseLibrary !== null) {
+        promiseLibrarySpy = spy(promiseLibrary);
+        promisifyTest = promisify(mockFn, promiseLibrarySpy);
+      } else {
+        promisifyTest = promisify(mockFn);
+      }
+
+      return promisifyTest(...args)
         .then(actual => {
           expect(actual).to.deep.equal(expected);
 
@@ -37,34 +54,47 @@ describe("promise_util.js", () => {
             fnSpy.args[0].length - 1
           );
 
-          expect([actuallyExpected]).to.deep.equal([args]);
+          if (isCustomPromise) {
+            expect(promiseLibrarySpy.called).to.be.true;
+          } else {
+            expect([actuallyExpected]).to.deep.equal([args]);
+          }
         })
         .catch(actual => {
           expect(actual).to.deep.equal(expected);
         });
     };
 
-    const createPassMockFn = () => createMockFn(undefined, passingUuid);
-    const createFailMockFn = () => createMockFn(errorUuid, undefined);
+    const testBattery = (callSet) => {
+      it("should promise to execute a standard callback function with a 0 argument signature like (callback)", () => {
+        return callSet.pop()(createPassMockFn(), passingUuid);
+      });
 
-    it("should promise to execute a standard callback function with a 0 argument signature like (callback)", () => {
-      return testFn(0)(createPassMockFn(), passingUuid);
+      it("should promise to execute a standard callback function with a 1 argument signature like (a, callback)", () => {
+        return callSet.pop()(createPassMockFn(), passingUuid);
+      });
+
+      it("should promise to execute a standard callback function with a 2 argument signature like (a, b, callback)", () => {
+        return callSet.pop()(createPassMockFn(), passingUuid);
+      });
+
+      it("should promise to execute a standard callback function with a 10 argument signature like (a, b, c, d, e, f, g, h, i, j, callback)", () => {
+        return callSet.pop()(createPassMockFn(), passingUuid);
+      });
+
+      it("should reject if called back with an error", () => {
+        return callSet.pop()(createFailMockFn(), errorUuid);
+      });
+    };
+
+    describe("when using the native Promise library,", () => {
+      testBattery(nativePromiseCallSet.map(el => testFn(el)));
     });
-
-    it("should promise to execute a standard callback function with a 1 argument signature like (a, callback)", () => {
-      return testFn(1)(createPassMockFn(), passingUuid);
+    describe('when using bluebird (a custom Promise/A+ library)', () => {
+      testBattery(nativePromiseCallSet.map(el => testFn(el, bluebird)));
     });
-
-    it("should promise to execute a standard callback function with a 2 argument signature like (a, b, callback)", () => {
-      return testFn(2)(createPassMockFn(), passingUuid);
-    });
-
-    it("should promise to execute a standard callback function with a 10 argument signature like (a, b, c, d, e, f, g, h, i, j, callback)", () => {
-      return testFn(10)(createPassMockFn(), passingUuid);
-    });
-
-    it("should reject if a called back with an error", () => {
-      return testFn(10)(createFailMockFn(), errorUuid);
+    describe('when using nativePromiseOnly (a custom Promise/A+ library)', () => {
+      testBattery(nativePromiseCallSet.map(el => testFn(el, nativePromiseOnly)));
     });
   });
 });
