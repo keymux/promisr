@@ -5,10 +5,69 @@ const bluebird = require("bluebird");
 const nativePromiseOnly = require("native-promise-only");
 const RSVP = require("rsvp").Promise;
 
-const { promisify } = require("../../src/promisify");
+const { promisify, promisifyCreator } = require("../../src/promisify");
 
 describe("promise_util.js", () => {
-  describe("promisify", () => {
+  describe("promisifyCreator()", () => {
+    describe("given a function with an abnormal callback", () => {
+      let aResult;
+      let callbackSpy;
+
+      const ERROR_MESSAGE = "An error occurred!";
+
+      const promisifyMe = spy((input, shouldError, cb) => {
+        if (shouldError) {
+          cb(new Error(ERROR_MESSAGE), input, undefined);
+        } else {
+          cb(undefined, input, aResult);
+        }
+      });
+
+      beforeEach(() => {
+        aResult = uuid();
+      });
+
+      describe("and a properly crafted callback creator", () => {
+        let mockInput;
+
+        beforeEach(() => {
+          mockInput = uuid();
+        });
+
+        const callbackCreator = (resolve, reject) =>
+          (callbackSpy = spy((error, input, result) => {
+            if (error) reject(error);
+            resolve(result);
+          }));
+
+        it("should be possible to promisify that function", () => {
+          return promisifyCreator(callbackCreator)(promisifyMe)(
+            mockInput,
+            false
+          ).then(result => {
+            expect(result).to.equal(aResult);
+            expect(callbackSpy.args).to.deep.equal([
+              [undefined, mockInput, aResult],
+            ]);
+          });
+        });
+
+        it("should also work when there's an error", () => {
+          return promisifyCreator(callbackCreator)(promisifyMe)(mockInput, true)
+            .then(() => Promise.reject(new Error("unexpected resolution")))
+            .catch(error => {
+              expect(error.message).to.equal(ERROR_MESSAGE);
+
+              expect(callbackSpy.args).to.deep.equal([
+                [error, mockInput, undefined],
+              ]);
+            });
+        });
+      });
+    });
+  });
+
+  describe("promisify()", () => {
     let passingUuid;
     let errorUuid;
     let fnSpy;
