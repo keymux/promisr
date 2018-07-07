@@ -1,6 +1,6 @@
 {
   "name": "@keymux/promisr",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A promise library containing utilities for expanding Promise functionality",
   "main": "src/main.js",
   "license": "MIT",
