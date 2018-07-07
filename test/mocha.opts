@@ -1,0 +1,6 @@
+# This makes sure that unhandled promise rejections cause
+#  the test suite to break (process.exit), which is good
+#  to ensure they don't go unnoticed.
+--require make-promises-safe
+--reporter mochawesome
+--reporter-options reportDir=reports
