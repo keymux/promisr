@@ -17,7 +17,7 @@
     "uuid": "^3.2.1"
   },
   "scripts": {
-    "test:unit": "yarn nyc mocha --reporter=mochawesome ./test/unit/**/*.js"
+    "test:unit": "yarn nyc mocha --recursive --reporter=mochawesome ./test/unit"
   },
   "dependencies": {}
 }
